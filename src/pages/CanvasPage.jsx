@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { fabric } from 'fabric';
 import { saveCanvas, loadCanvas } from '../canvasService';
 
@@ -12,79 +12,39 @@ const CanvasPage = () => {
   const [selectedTool, setSelectedTool] = useState('select');
   const [selectedColor, setSelectedColor] = useState('#3b82f6');
   const [isSaving, setIsSaving] = useState(false);
+  const selectedToolRef = useRef('select');
+  const selectedColorRef = useRef('#3b82f6');
 
-  const loadExistingCanvas = async () => {
-    try {
-      const canvasData = await loadCanvas(canvasId);
-      if (canvasData && canvasData.canvasData && fabricRef.current) {
-        fabricRef.current.loadFromJSON(canvasData.canvasData, () => {
-          fabricRef.current.renderAll();
-        });
-      }
-    } catch (error) {
-      console.error('Error loading canvas:', error);
-    }
-  };
-
-  const handleMouseDown = (options) => {
-    const canvas = fabricRef.current;
-    const pointer = canvas.getPointer(options.e);
-    
-    if (selectedTool === 'select') return;
-    
-    let shape = null;
-    
-    switch (selectedTool) {
-      case 'rectangle':
-        shape = new fabric.Rect({
-          left: pointer.x,
-          top: pointer.y,
-          width: 100,
-          height: 80,
-          fill: selectedColor,
-          stroke: '#000',
-          strokeWidth: 1,
-        });
-        break;
-        
-      case 'circle':
-        shape = new fabric.Circle({
-          left: pointer.x,
-          top: pointer.y,
-          radius: 50,
-          fill: selectedColor,
-          stroke: '#000',
-          strokeWidth: 1,
-        });
-        break;
-        
-      case 'text':
-        shape = new fabric.IText('Click to edit', {
-          left: pointer.x,
-          top: pointer.y,
-          fill: selectedColor,
-          fontSize: 20,
-          fontFamily: 'Arial',
-        });
-        break;
-        
-      case 'pen':
-        canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush.width = 2;
-        canvas.freeDrawingBrush.color = selectedColor;
-        return;
-    }
-    
-    if (shape) {
-      canvas.add(shape);
-      canvas.setActiveObject(shape);
-      setSelectedTool('select');
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (selectedTool === 'pen' && fabricRef.current) {
+  const handleToolChange = useCallback((toolId) => {
+    // If switching away from pen mode, disable drawing mode
+    if (selectedToolRef.current === 'pen' && fabricRef.current) {
       fabricRef.current.isDrawingMode = false;
+    }
+    setSelectedTool(toolId);
+    selectedToolRef.current = toolId;
+    
+    // Update cursor immediately
+    if (fabricRef.current) {
+      updateCanvasCursor(toolId);
+    }
+  }, []);
+
+  const updateCanvasCursor = (tool) => {
+    if (!fabricRef.current) return;
+    
+    switch (tool) {
+      case 'pen':
+        fabricRef.current.defaultCursor = 'crosshair';
+        break;
+      case 'text':
+        fabricRef.current.defaultCursor = 'text';
+        break;
+      case 'rectangle':
+      case 'circle':
+        fabricRef.current.defaultCursor = 'crosshair';
+        break;
+      default:
+        fabricRef.current.defaultCursor = 'default';
     }
   };
 
@@ -96,21 +56,160 @@ const CanvasPage = () => {
       width: 800,
       height: 600,
       backgroundColor: 'white',
+      selection: true,
+      preserveObjectStacking: true,
     });
 
     fabricRef.current = canvas;
 
     // Load existing canvas data
+    const loadExistingCanvas = async () => {
+      try {
+        const canvasData = await loadCanvas(canvasId);
+        if (canvasData && canvasData.canvasData && canvas) {
+          canvas.loadFromJSON(canvasData.canvasData, () => {
+            canvas.renderAll();
+          });
+        }
+      } catch (error) {
+        console.error('Error loading canvas:', error);
+      }
+    };
+
     loadExistingCanvas();
 
-    // Canvas event listeners
+    // Canvas event listeners with current state
+    const handleMouseDown = (options) => {
+      const pointer = canvas.getPointer(options.e);
+      const currentTool = selectedToolRef.current;
+      const currentColor = selectedColorRef.current;
+      
+      if (currentTool === 'select') return;
+      
+      let shape = null;
+      
+      switch (currentTool) {
+        case 'rectangle':
+          shape = new fabric.Rect({
+            left: pointer.x - 50,
+            top: pointer.y - 40,
+            width: 100,
+            height: 80,
+            fill: currentColor,
+            stroke: '#333',
+            strokeWidth: 2,
+          });
+          break;
+          
+        case 'circle':
+          shape = new fabric.Circle({
+            left: pointer.x - 50,
+            top: pointer.y - 50,
+            radius: 50,
+            fill: currentColor,
+            stroke: '#333',
+            strokeWidth: 2,
+          });
+          break;
+          
+        case 'text':
+          shape = new fabric.IText('Double click to edit', {
+            left: pointer.x,
+            top: pointer.y,
+            fill: currentColor,
+            fontSize: 24,
+            fontFamily: 'Arial',
+          });
+          break;
+          
+        case 'pen':
+          canvas.isDrawingMode = true;
+          canvas.freeDrawingBrush.width = 3;
+          canvas.freeDrawingBrush.color = currentColor;
+          canvas.freeDrawingBrush.strokeLineCap = 'round';
+          return;
+      }
+      
+      if (shape) {
+        canvas.add(shape);
+        canvas.setActiveObject(shape);
+        selectedToolRef.current = 'select';
+        setSelectedTool('select');
+        updateCanvasCursor('select');
+        canvas.renderAll();
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (selectedToolRef.current === 'pen') {
+        canvas.isDrawingMode = false;
+      }
+    };
+
     canvas.on('mouse:down', handleMouseDown);
     canvas.on('mouse:up', handleMouseUp);
+
+    // Set initial cursor
+    updateCanvasCursor(selectedToolRef.current);
 
     return () => {
       canvas.dispose();
     };
-  }, [canvasId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canvasId]);
+
+  // Update refs when state changes
+  useEffect(() => {
+    selectedToolRef.current = selectedTool;
+    if (fabricRef.current) {
+      updateCanvasCursor(selectedTool);
+    }
+  }, [selectedTool]);
+
+  useEffect(() => {
+    selectedColorRef.current = selectedColor;
+    // Update pen brush color if currently in pen mode
+    if (selectedTool === 'pen' && fabricRef.current && fabricRef.current.freeDrawingBrush) {
+      fabricRef.current.freeDrawingBrush.color = selectedColor;
+    }
+  }, [selectedColor, selectedTool]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      switch (e.key) {
+        case 'v':
+        case 'V':
+          handleToolChange('select');
+          break;
+        case 'r':
+        case 'R':
+          handleToolChange('rectangle');
+          break;
+        case 'c':
+        case 'C':
+          handleToolChange('circle');
+          break;
+        case 't':
+        case 'T':
+          handleToolChange('text');
+          break;
+        case 'p':
+        case 'P':
+          handleToolChange('pen');
+          break;
+        case 'Delete':
+        case 'Backspace':
+          e.preventDefault();
+          deleteSelected();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [handleToolChange]);
 
   const handleSave = async () => {
     if (!fabricRef.current) return;
@@ -178,15 +277,15 @@ const CanvasPage = () => {
             <h3 className="font-medium text-gray-700 mb-3">Tools</h3>
             <div className="space-y-2">
               {[
-                { id: 'select', label: 'Select', icon: '👆' },
-                { id: 'rectangle', label: 'Rectangle', icon: '▭' },
-                { id: 'circle', label: 'Circle', icon: '○' },
-                { id: 'text', label: 'Text', icon: 'T' },
-                { id: 'pen', label: 'Pen', icon: '✏️' },
+                { id: 'select', label: 'Select', icon: '👆', shortcut: 'V' },
+                { id: 'rectangle', label: 'Rectangle', icon: '▭', shortcut: 'R' },
+                { id: 'circle', label: 'Circle', icon: '○', shortcut: 'C' },
+                { id: 'text', label: 'Text', icon: 'T', shortcut: 'T' },
+                { id: 'pen', label: 'Pen', icon: '✏️', shortcut: 'P' },
               ].map(tool => (
                 <button
                   key={tool.id}
-                  onClick={() => setSelectedTool(tool.id)}
+                  onClick={() => handleToolChange(tool.id)}
                   className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                     selectedTool === tool.id
                       ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
@@ -194,7 +293,10 @@ const CanvasPage = () => {
                   }`}
                 >
                   <span className="text-lg">{tool.icon}</span>
-                  <span>{tool.label}</span>
+                  <div className="flex flex-col items-start">
+                    <span>{tool.label}</span>
+                    <span className="text-xs opacity-60">({tool.shortcut})</span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -240,6 +342,17 @@ const CanvasPage = () => {
               >
                 Clear Canvas
               </button>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-medium text-gray-700 mb-3">Tips</h3>
+            <div className="text-xs text-gray-600 space-y-1">
+              <p>• Click shapes to select and move</p>
+              <p>• Double-click text to edit</p>
+              <p>• Use keyboard shortcuts (V, R, C, T, P)</p>
+              <p>• Delete key removes selected objects</p>
+              <p>• Save regularly to preserve your work</p>
             </div>
           </div>
         </div>
