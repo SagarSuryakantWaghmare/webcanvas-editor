@@ -86,16 +86,31 @@ const CanvasPage = () => {
     // Prevent multiple initializations
     if (fabricRef.current) return;
 
+    let handleResize;
+
     try {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
       const canvas = new fabric.Canvas(canvasRef.current, {
-        width: 800,
-        height: 600,
+        width: width,
+        height: height,
         backgroundColor: 'white',
         selection: true,
         preserveObjectStacking: true,
         enableRetinaScaling: false,
         renderOnAddRemove: true,
       });
+      
+      // Handle window resize
+      handleResize = () => {
+        const newWidth = window.innerWidth;
+        const newHeight = window.innerHeight;
+        canvas.setWidth(newWidth);
+        canvas.setHeight(newHeight);
+        canvas.renderAll();
+      };
+      
+      window.addEventListener('resize', handleResize);
       
       console.log('Canvas initialized successfully');
       fabricRef.current = canvas;
@@ -193,6 +208,9 @@ const CanvasPage = () => {
     }
 
     return () => {
+      if (handleResize) {
+        window.removeEventListener('resize', handleResize);
+      }
       if (fabricRef.current) {
         fabricRef.current.dispose();
         fabricRef.current = null;
@@ -478,17 +496,16 @@ const CanvasPage = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-center h-full">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
-          <canvas
-            ref={canvasRef}
-            className={`border-2 rounded-xl transition-all duration-300 ${
-              selectedTool === 'pen' 
-                ? 'border-orange-400 shadow-orange-100 shadow-lg' 
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          />
-        </div>
+      <div className="fixed inset-0 z-0">
+        <canvas
+          ref={canvasRef}
+          className={`w-full h-full transition-all duration-300 ${
+            selectedTool === 'pen'
+              ? 'cursor-crosshair'
+              : 'cursor-default'
+          }`}
+          style={{ display: 'block', width: '100vw', height: '100vh' }}
+        />
       </div>
 
       <Dock
