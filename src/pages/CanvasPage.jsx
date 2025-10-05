@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { fabric } from 'fabric';
 import { saveCanvas, loadCanvas } from '../canvasService';
+import Dock from '../components/Dock';
 
 const CanvasPage = () => {
   // The useParams hook reads the dynamic part of the URL (the ":canvasId").
@@ -309,192 +310,195 @@ const CanvasPage = () => {
     }
   };
 
-  const clearCanvas = () => {
-    if (!fabricRef.current) return;
-    
-    if (window.confirm('Are you sure you want to clear the entire canvas?')) {
-      try {
-        fabricRef.current.clear();
-        fabricRef.current.backgroundColor = 'white';
-        fabricRef.current.renderAll();
-      } catch (error) {
-        console.error('Error clearing canvas:', error);
-      }
+
+
+  const dockItems = [
+    {
+      label: 'Website name',
+      icon: (
+        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+          WC
+        </div>
+      ),
+      onClick: () => navigate('/'),
+      className: 'bg-gradient-to-br from-orange-400 to-orange-500'
+    },
+    {
+      label: 'Select',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <path d="M12 2L3 7L12 12L21 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 17L12 22L21 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      onClick: () => handleToolChange('select'),
+      className: selectedTool === 'select' ? 'bg-orange-500 border-orange-300' : ''
+    },
+    {
+      label: 'Rectangle',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      ),
+      onClick: () => handleToolChange('rectangle'),
+      className: selectedTool === 'rectangle' ? 'bg-orange-500 border-orange-300' : ''
+    },
+    {
+      label: 'Circle',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      ),
+      onClick: () => handleToolChange('circle'),
+      className: selectedTool === 'circle' ? 'bg-orange-500 border-orange-300' : ''
+    },
+    {
+      label: 'Pencil',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <path d="M12 19L7 14L16.5 4.5C17.28 3.72 18.72 3.72 19.5 4.5C20.28 5.28 20.28 6.72 19.5 7.5L12 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M16 8L2 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M17.5 15H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      onClick: () => handleToolChange('pen'),
+      className: selectedTool === 'pen' ? 'bg-orange-500 border-orange-300' : ''
+    },
+    {
+      label: 'Text',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <polyline points="4,7 4,4 20,4 20,7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <line x1="9" y1="20" x2="15" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      onClick: () => handleToolChange('text'),
+      className: selectedTool === 'text' ? 'bg-orange-500 border-orange-300' : ''
+    },
+    {
+      label: 'Save',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <path d="M19 21H5C3.89 21 3 20.11 3 19V5C3 3.89 3.89 3 5 3H16L21 8V19C21 20.11 20.11 21 19 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <polyline points="17,21 17,13 7,13 7,21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <polyline points="7,3 7,8 15,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      onClick: handleSave,
+      className: isSaving ? 'bg-green-500' : ''
+    },
+    {
+      label: 'Download',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      onClick: () => {
+        if (!fabricRef.current) return;
+        const dataURL = fabricRef.current.toDataURL({
+          format: 'png',
+          quality: 1,
+          multiplier: 2
+        });
+        const link = document.createElement('a');
+        link.download = `canvas-${canvasId}.png`;
+        link.href = dataURL;
+        link.click();
+      },
+      className: ''
+    },
+    {
+      label: 'GitHub',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+        </svg>
+      ),
+      onClick: () => window.open('https://github.com/SagarSuryakantWaghmare/webcanvas-editor', '_blank'),
+      className: ''
     }
-  };
+  ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              ← Back to Home
-            </button>
-            <h1 className="text-xl font-semibold">Canvas Editor</h1>
-            <span className="text-sm text-gray-500 font-mono">ID: {canvasId}</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
+    <div className="h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 relative overflow-hidden">
+      <div className="absolute top-6 left-6 z-10">
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-gray-200">
+          <h1 className="text-lg font-bold text-gray-900">WebCanvas Editor</h1>
+          <p className="text-xs text-gray-500 font-mono">Canvas ID: {canvasId}</p>
         </div>
       </div>
 
-      <div className="flex flex-1">
-        {/* Toolbar */}
-        <div className="w-64 bg-white shadow-lg p-4 space-y-4">
-          <div>
-            <h3 className="font-medium text-gray-700 mb-3">Tools</h3>
-            <div className="space-y-2">
-              {[
-                { id: 'select', label: 'Select', icon: '👆', shortcut: 'V' },
-                { id: 'rectangle', label: 'Rectangle', icon: '▭', shortcut: 'R' },
-                { id: 'circle', label: 'Circle', icon: '○', shortcut: 'C' },
-                { id: 'text', label: 'Text', icon: 'T', shortcut: 'T' },
-                { id: 'pen', label: 'Pencil', icon: '✏️', shortcut: 'P' },
-              ].map(tool => (
-                <button
-                  key={tool.id}
-                  onClick={() => handleToolChange(tool.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                    selectedTool === tool.id
-                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-                      : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
-                  }`}
-                >
-                  <span className="text-lg">{tool.icon}</span>
-                  <div className="flex flex-col items-start">
-                    <span>{tool.label}</span>
-                    <span className="text-xs opacity-60">({tool.shortcut})</span>
-                  </div>
-                </button>
-              ))}
+      <div className="absolute top-6 right-6 z-10">
+        <div className="flex items-center space-x-3">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-gray-200">
+            <div className="flex items-center space-x-3">
+              <label className="text-sm font-medium text-gray-700">Color:</label>
+              <div className="flex space-x-2">
+                {['#EF7722', '#F4B942', '#E5E7EB', '#0EA5E9', '#10b981', '#ef4444', '#8b5cf6', '#000000'].map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${
+                      selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <input
+                type="color"
+                value={selectedColor}
+                onChange={(e) => setSelectedColor(e.target.value)}
+                className="w-6 h-6 rounded border-0 cursor-pointer"
+              />
             </div>
           </div>
-
-          <div>
-            <h3 className="font-medium text-gray-700 mb-3">Color</h3>
-            <div className="flex flex-wrap gap-2">
-              {[
-                '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
-                '#8b5cf6', '#ec4899', '#6b7280', '#000000'
-              ].map(color => (
-                <button
-                  key={color}
-                  onClick={() => setSelectedColor(color)}
-                  className={`w-8 h-8 rounded-lg border-2 ${
-                    selectedColor === color ? 'border-gray-800' : 'border-gray-300'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-            <input
-              type="color"
-              value={selectedColor}
-              onChange={(e) => setSelectedColor(e.target.value)}
-              className="mt-2 w-full h-8 rounded border"
-            />
-          </div>
-
-          {/* Pencil Settings - always visible but styled based on selection */}
-          <div className={selectedTool === 'pen' ? 'opacity-100' : 'opacity-50'}>
-            <h3 className="font-medium text-gray-700 mb-3">✏️ Pencil Settings</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="flex items-center justify-between text-sm mb-1">
-                  <span>Brush Size:</span>
-                  <span className={`font-medium px-2 py-1 rounded text-xs ${
-                    selectedTool === 'pen' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'
-                  }`}>{brushSize}px</span>
-                </label>
+          {selectedTool === 'pen' && (
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-gray-200">
+              <div className="flex items-center space-x-3">
+                <label className="text-sm font-medium text-gray-700">Brush:</label>
                 <input
                   type="range"
                   min="1"
                   max="20"
                   value={brushSize}
                   onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                  className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
-                  disabled={selectedTool !== 'pen'}
+                  className="w-20 h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer"
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>Fine</span>
-                  <span>Thick</span>
-                </div>
+                <span className="text-sm font-medium text-gray-700 bg-orange-100 px-2 py-1 rounded">{brushSize}px</span>
               </div>
-              
-              {selectedTool === 'pen' && (
-                <div className="bg-blue-50 p-2 rounded-lg">
-                  <p className="text-xs text-blue-700 font-medium mb-1">💡 Ready to draw!</p>
-                  <p className="text-xs text-blue-600">Click and drag to start drawing</p>
-                </div>
-              )}
             </div>
-          </div>
-
-          <div>
-            <h3 className="font-medium text-gray-700 mb-3">Actions</h3>
-            <div className="space-y-2">
-              <button
-                onClick={deleteSelected}
-                className="w-full px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-              >
-                Delete Selected
-              </button>
-              <button
-                onClick={clearCanvas}
-                className="w-full px-3 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
-              >
-                Clear Canvas
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-medium text-gray-700 mb-3">Tips</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p>• Click shapes to select and move</p>
-              <p>• Double-click text to edit</p>
-              <p>• Use keyboard shortcuts (V, R, C, T, P)</p>
-              <p>• Delete key removes selected objects</p>
-              <p>• Save regularly to preserve your work</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Canvas Area */}
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <div className="mb-2 text-center">
-              <span className={`inline-flex items-center px-3 py-1 text-sm rounded-full font-medium transition-all ${
-                selectedTool === 'pen' 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'bg-gray-100 text-gray-500'
-              }`}>
-                {selectedTool === 'pen' ? '✏️ Pencil Mode Active - Draw freely!' : '🎨 Canvas Ready'}
-              </span>
-            </div>
-            <canvas
-              ref={canvasRef}
-              className={`border rounded transition-all duration-200 ${
-                selectedTool === 'pen' 
-                  ? 'border-blue-400 border-2' 
-                  : 'border-gray-300'
-              }`}
-            />
-          </div>
+          )}
         </div>
       </div>
+
+      <div className="flex items-center justify-center h-full">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
+          <canvas
+            ref={canvasRef}
+            className={`border-2 rounded-xl transition-all duration-300 ${
+              selectedTool === 'pen' 
+                ? 'border-orange-400 shadow-orange-100 shadow-lg' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          />
+        </div>
+      </div>
+
+      <Dock
+        items={dockItems}
+        className="bg-black/80 backdrop-blur-lg"
+        magnification={70}
+        distance={200}
+        panelHeight={64}
+        baseItemSize={50}
+      />
     </div>
   );
 };
