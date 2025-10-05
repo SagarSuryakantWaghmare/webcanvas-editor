@@ -59,7 +59,7 @@ function DockLabel({ children, className = '', ...rest }) {
           animate={{ opacity: 1, y: -10 }}
           exit={{ opacity: 0, y: 0 }}
           transition={{ duration: 0.2 }}
-          className={`${className} absolute -top-6 left-1/2 w-fit whitespace-pre rounded-md border border-neutral-700 bg-[#060010] px-2 py-0.5 text-xs text-white`}
+          className={`${className} absolute -top-8 left-1/2 w-fit whitespace-nowrap rounded-md border border-neutral-700 bg-[#060010] px-3 py-1 text-xs text-white shadow-lg`}
           role="tooltip"
           style={{ x: '-50%' }}
         >
@@ -122,7 +122,16 @@ export default function Dock({
             baseItemSize={baseItemSize}
           >
             <DockIcon>{item.icon}</DockIcon>
-            <DockLabel>{item.label}</DockLabel>
+            <DockLabel>
+              <div className="flex flex-col items-center">
+                <span className="font-medium">{item.tooltip || item.label}</span>
+                {item.shortcut && (
+                  <span className="text-xs opacity-70 mt-0.5 bg-neutral-800 px-1 rounded">
+                    {item.shortcut}
+                  </span>
+                )}
+              </div>
+            </DockLabel>
           </DockItem>
         ))}
       </motion.div>

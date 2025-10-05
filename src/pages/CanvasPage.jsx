@@ -15,6 +15,7 @@ const CanvasPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const selectedToolRef = useRef('select');
   const selectedColorRef = useRef('#3b82f6');
   const brushSizeRef = useRef(3);
@@ -264,44 +265,6 @@ const CanvasPage = () => {
     }
   }, [brushSize, selectedTool]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      
-      switch (e.key) {
-        case 'v':
-        case 'V':
-          handleToolChange('select');
-          break;
-        case 'r':
-        case 'R':
-          handleToolChange('rectangle');
-          break;
-        case 'c':
-        case 'C':
-          handleToolChange('circle');
-          break;
-        case 't':
-        case 'T':
-          handleToolChange('text');
-          break;
-        case 'p':
-        case 'P':
-          handleToolChange('pen');
-          break;
-        case 'Delete':
-        case 'Backspace':
-          e.preventDefault();
-          deleteSelected();
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [handleToolChange]);
-
   const handleSave = useCallback(async (isAutosave = false) => {
     if (!fabricRef.current) return;
     
@@ -320,6 +283,81 @@ const CanvasPage = () => {
       setIsSaving(false);
     }
   }, [canvasId]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      // Handle Ctrl key combinations
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key.toLowerCase()) {
+          case 's':
+            e.preventDefault();
+            handleSave();
+            showToast('Canvas saved with Ctrl+S!', 'success');
+            break;
+          case 'd':
+            e.preventDefault();
+            // Download canvas
+            if (fabricRef.current) {
+              const dataURL = fabricRef.current.toDataURL({
+                format: 'png',
+                quality: 1,
+                multiplier: 2
+              });
+              const link = document.createElement('a');
+              link.download = `canvas-${canvasId}.png`;
+              link.href = dataURL;
+              link.click();
+              showToast('Canvas downloaded with Ctrl+D!', 'success');
+            }
+            break;
+        }
+        return;
+      }
+      
+      // Handle single key shortcuts
+      switch (e.key.toLowerCase()) {
+        case 'v':
+          handleToolChange('select');
+          showToast('Select tool activated (V)', 'success');
+          break;
+        case 'r':
+          handleToolChange('rectangle');
+          showToast('Rectangle tool activated (R)', 'success');
+          break;
+        case 'c':
+          handleToolChange('circle');
+          showToast('Circle tool activated (C)', 'success');
+          break;
+        case 't':
+          handleToolChange('text');
+          showToast('Text tool activated (T)', 'success');
+          break;
+        case 'p':
+          handleToolChange('pen');
+          showToast('Pencil tool activated (P)', 'success');
+          break;
+        case '?':
+        case '/':
+          e.preventDefault();
+          setShowShortcuts(!showShortcuts);
+          break;
+        case 'escape':
+          setShowShortcuts(false);
+          break;
+        case 'delete':
+        case 'backspace':
+          e.preventDefault();
+          deleteSelected();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [handleToolChange, handleSave, canvasId, showShortcuts]);
 
   const deleteSelected = () => {
     if (!fabricRef.current) return;
@@ -360,6 +398,8 @@ const CanvasPage = () => {
   const dockItems = [
     {
       label: 'Select',
+      tooltip: 'Select Tool (V)',
+      shortcut: 'V',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
           <path d="M12 2L3 7L12 12L21 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -371,6 +411,8 @@ const CanvasPage = () => {
     },
     {
       label: 'Rectangle',
+      tooltip: 'Rectangle Tool (R)',
+      shortcut: 'R',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
@@ -381,6 +423,8 @@ const CanvasPage = () => {
     },
     {
       label: 'Circle',
+      tooltip: 'Circle Tool (C)',
+      shortcut: 'C',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
@@ -391,6 +435,8 @@ const CanvasPage = () => {
     },
     {
       label: 'Pencil',
+      tooltip: 'Pencil Tool (P)',
+      shortcut: 'P',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
           <path d="M12 19L7 14L16.5 4.5C17.28 3.72 18.72 3.72 19.5 4.5C20.28 5.28 20.28 6.72 19.5 7.5L12 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -403,6 +449,8 @@ const CanvasPage = () => {
     },
     {
       label: 'Text',
+      tooltip: 'Text Tool (T)',
+      shortcut: 'T',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
           <polyline points="4,7 4,4 20,4 20,7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -415,6 +463,8 @@ const CanvasPage = () => {
     },
     {
       label: 'Save',
+      tooltip: 'Save Canvas (Ctrl+S)',
+      shortcut: 'Ctrl+S',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
           <path d="M19 21H5C3.89 21 3 20.11 3 19V5C3 3.89 3.89 3 5 3H16L21 8V19C21 20.11 20.11 21 19 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -427,6 +477,8 @@ const CanvasPage = () => {
     },
     {
       label: 'Download',
+      tooltip: 'Download Canvas (Ctrl+D)',
+      shortcut: 'Ctrl+D',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
           <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -445,6 +497,7 @@ const CanvasPage = () => {
         link.download = `canvas-${canvasId}.png`;
         link.href = dataURL;
         link.click();
+        showToast('Canvas downloaded successfully!', 'success');
       },
       className: ''
     }
@@ -576,6 +629,86 @@ const CanvasPage = () => {
             <span className="text-sm font-medium">All changes saved</span>
           )}
         </div>
+      </div>
+
+      {/* Keyboard Shortcuts Help Panel */}
+      {showShortcuts && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Keyboard Shortcuts</h3>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Select Tool</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">V</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Rectangle Tool</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">R</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Circle Tool</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">C</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Pencil Tool</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">P</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Text Tool</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">T</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Save Canvas</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">Ctrl+S</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Download Canvas</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">Ctrl+D</kbd>
+                </div>
+                <div className="flex justify-between">
+                  <span>Delete Selected</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">Del</kbd>
+                </div>
+              </div>
+              <div className="border-t pt-3 mt-4">
+                <div className="flex justify-between text-sm">
+                  <span>Show/Hide Shortcuts</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">?</kbd>
+                </div>
+                <div className="flex justify-between text-sm mt-2">
+                  <span>Close Help</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">Esc</kbd>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help Button - Bottom Left */}
+      <div className="fixed bottom-6 left-6 z-10">
+        <button
+          onClick={() => setShowShortcuts(!showShortcuts)}
+          className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+          title="Keyboard Shortcuts (?)"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <path d="M9.09 9A3 3 0 0 1 12 6C13.6569 6 15 7.34315 15 9C15 10.6569 13.6569 12 12 12V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
     </div>
   );
