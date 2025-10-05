@@ -11,17 +11,31 @@ const CanvasPage = () => {
   const fabricRef = useRef(null);
   const [selectedTool, setSelectedTool] = useState('select');
   const [selectedColor, setSelectedColor] = useState('#3b82f6');
+  const [brushSize, setBrushSize] = useState(2);
   const [isSaving, setIsSaving] = useState(false);
   const selectedToolRef = useRef('select');
   const selectedColorRef = useRef('#3b82f6');
+  const brushSizeRef = useRef(2);
 
   const handleToolChange = useCallback((toolId) => {
     // If switching away from pen mode, disable drawing mode
     if (selectedToolRef.current === 'pen' && fabricRef.current) {
       fabricRef.current.isDrawingMode = false;
     }
+    
     setSelectedTool(toolId);
     selectedToolRef.current = toolId;
+    
+    // If switching to pen mode, set up the brush immediately
+    if (toolId === 'pen' && fabricRef.current) {
+      fabricRef.current.isDrawingMode = true;
+      fabricRef.current.freeDrawingBrush = new fabric.PencilBrush(fabricRef.current);
+      fabricRef.current.freeDrawingBrush.width = brushSizeRef.current;
+      fabricRef.current.freeDrawingBrush.color = selectedColorRef.current;
+      fabricRef.current.freeDrawingBrush.strokeLineCap = 'round';
+      fabricRef.current.freeDrawingBrush.strokeLineJoin = 'round';
+      fabricRef.current.freeDrawingBrush.decimate = 0.4;
+    }
     
     // Update cursor immediately
     if (fabricRef.current) {
@@ -35,16 +49,22 @@ const CanvasPage = () => {
     switch (tool) {
       case 'pen':
         fabricRef.current.defaultCursor = 'crosshair';
+        fabricRef.current.hoverCursor = 'crosshair';
+        fabricRef.current.moveCursor = 'crosshair';
         break;
       case 'text':
         fabricRef.current.defaultCursor = 'text';
+        fabricRef.current.hoverCursor = 'text';
         break;
       case 'rectangle':
       case 'circle':
         fabricRef.current.defaultCursor = 'crosshair';
+        fabricRef.current.hoverCursor = 'crosshair';
         break;
       default:
         fabricRef.current.defaultCursor = 'default';
+        fabricRef.current.hoverCursor = 'move';
+        fabricRef.current.moveCursor = 'move';
     }
   };
 
@@ -123,10 +143,16 @@ const CanvasPage = () => {
           break;
           
         case 'pen':
-          canvas.isDrawingMode = true;
-          canvas.freeDrawingBrush.width = 3;
-          canvas.freeDrawingBrush.color = currentColor;
-          canvas.freeDrawingBrush.strokeLineCap = 'round';
+          // Pen mode is already set up in handleToolChange, just ensure it's active
+          if (!canvas.isDrawingMode) {
+            canvas.isDrawingMode = true;
+            canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+            canvas.freeDrawingBrush.width = brushSizeRef.current;
+            canvas.freeDrawingBrush.color = currentColor;
+            canvas.freeDrawingBrush.strokeLineCap = 'round';
+            canvas.freeDrawingBrush.strokeLineJoin = 'round';
+            canvas.freeDrawingBrush.decimate = 0.4;
+          }
           return;
       }
       
@@ -172,6 +198,14 @@ const CanvasPage = () => {
       fabricRef.current.freeDrawingBrush.color = selectedColor;
     }
   }, [selectedColor, selectedTool]);
+
+  useEffect(() => {
+    brushSizeRef.current = brushSize;
+    // Update pen brush size if currently in pen mode
+    if (selectedTool === 'pen' && fabricRef.current && fabricRef.current.freeDrawingBrush) {
+      fabricRef.current.freeDrawingBrush.width = brushSize;
+    }
+  }, [brushSize, selectedTool]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -281,7 +315,7 @@ const CanvasPage = () => {
                 { id: 'rectangle', label: 'Rectangle', icon: '▭', shortcut: 'R' },
                 { id: 'circle', label: 'Circle', icon: '○', shortcut: 'C' },
                 { id: 'text', label: 'Text', icon: 'T', shortcut: 'T' },
-                { id: 'pen', label: 'Pen', icon: '✏️', shortcut: 'P' },
+                { id: 'pen', label: 'Pencil', icon: '✎', shortcut: 'P' },
               ].map(tool => (
                 <button
                   key={tool.id}
@@ -327,6 +361,39 @@ const CanvasPage = () => {
             />
           </div>
 
+          <div className={selectedTool === 'pen' ? 'block' : 'hidden'}>
+            <h3 className="font-medium text-gray-700 mb-3">✎ Pencil Settings</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="flex items-center justify-between text-sm mb-1">
+                  <span>Brush Size:</span>
+                  <span className="font-medium bg-blue-100 px-2 py-1 rounded text-blue-800">{brushSize}px</span>
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  value={brushSize}
+                  onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Fine (1px)</span>
+                  <span>Thick (20px)</span>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm text-blue-700 font-medium mb-1">💡 Pencil Tips:</p>
+                <ul className="text-xs text-blue-600 space-y-1">
+                  <li>• Press and drag to draw smoothly</li>
+                  <li>• Adjust brush size while drawing</li>
+                  <li>• Change colors instantly</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <div>
             <h3 className="font-medium text-gray-700 mb-3">Actions</h3>
             <div className="space-y-2">
@@ -351,6 +418,7 @@ const CanvasPage = () => {
               <p>• Click shapes to select and move</p>
               <p>• Double-click text to edit</p>
               <p>• Use keyboard shortcuts (V, R, C, T, P)</p>
+              <p>• Pencil tool: Press P or click ✎ to draw</p>
               <p>• Delete key removes selected objects</p>
               <p>• Save regularly to preserve your work</p>
             </div>
@@ -359,10 +427,23 @@ const CanvasPage = () => {
 
         {/* Canvas Area */}
         <div className="flex-1 flex items-center justify-center p-8">
-          <div className="bg-white rounded-lg shadow-lg p-4">
+          <div className={`bg-white rounded-lg shadow-lg p-4 transition-all duration-200 ${
+            selectedTool === 'pen' ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
+          }`}>
+            {selectedTool === 'pen' && (
+              <div className="mb-2 text-center">
+                <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-medium">
+                  ✎ Pencil Mode Active - Draw freely!
+                </span>
+              </div>
+            )}
             <canvas
               ref={canvasRef}
-              className="border border-gray-300 rounded"
+              className={`border rounded transition-all duration-200 ${
+                selectedTool === 'pen' 
+                  ? 'border-blue-400 border-2 shadow-blue-100 shadow-lg' 
+                  : 'border-gray-300'
+              }`}
             />
           </div>
         </div>
