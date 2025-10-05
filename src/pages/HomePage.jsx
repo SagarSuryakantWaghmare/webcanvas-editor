@@ -10,7 +10,7 @@ const HomePage = () => {
       <HeroSection />
       
       
-      <section className="py-12 bg-gray-900 overflow-hidden">
+      <section className="py-8 sm:py-12 bg-gray-900 overflow-hidden">
         <ScrollVelocity
           texts={[
             "PROFESSIONAL DESIGN TOOLS • NO SIGN-IN REQUIRED • UNLIMITED CREATIVITY •",
@@ -18,54 +18,54 @@ const HomePage = () => {
           ]}
           velocity={50}
           className="text-orange-600 font-bold"
-          parallaxClassName="py-4"
-          scrollerClassName="text-2xl md:text-4xl"
+          parallaxClassName="py-2 sm:py-4"
+          scrollerClassName="text-lg sm:text-2xl md:text-4xl"
           numCopies={4}
           velocityMapping={{ input: [0, 500], output: [0, 3] }}
         />
       </section>
 
       
-      <section className="py-20 bg-gradient-to-b from-white via-gray-50 to-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b from-white via-gray-50 to-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 px-4">
               Powerful Features for Creative Minds
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4">
               Everything you need to bring your ideas to life with professional-grade tools.
             </p>
           </div>
 
           
-          <div className="grid lg:grid-cols-2 gap-16 mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 mb-12 sm:mb-16 lg:mb-20">
             
             
             <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-yellow-400/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
-              <div className="relative bg-white rounded-3xl p-8 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                <div className="flex flex-col lg:flex-row items-center">
-                  <div className="lg:w-1/2 space-y-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-yellow-400/20 rounded-2xl sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+              <div className="relative bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                <div className="flex flex-col items-center text-center sm:text-left sm:flex-row">
+                  <div className="w-full sm:w-1/2 space-y-4 sm:space-y-6">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-500 mx-auto sm:mx-0">
                       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" className="text-white">
                         <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
                       </svg>
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-gray-900">Professional Drawing Tools</h3>
-                    <p className="text-gray-600 leading-relaxed">
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Professional Drawing Tools</h3>
+                    <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
                       Create stunning artwork with our comprehensive suite of brushes, pencils, and vector tools. 
                       Advanced pressure sensitivity and customizable settings give you complete creative control.
                     </p>
-                    <ul className="space-y-3 text-gray-700">
-                      <li className="flex items-center"><div className="w-2 h-2 bg-orange-400 rounded-full mr-3"></div> Customizable brushes & textures</li>
-                      <li className="flex items-center"><div className="w-2 h-2 bg-orange-400 rounded-full mr-3"></div> Vector & raster support</li>
-                      <li className="flex items-center"><div className="w-2 h-2 bg-orange-400 rounded-full mr-3"></div> Pressure-sensitive drawing</li>
+                    <ul className="space-y-2 sm:space-y-3 text-gray-700 text-sm sm:text-base">
+                      <li className="flex items-center justify-center sm:justify-start"><div className="w-2 h-2 bg-orange-400 rounded-full mr-3"></div> Customizable brushes & textures</li>
+                      <li className="flex items-center justify-center sm:justify-start"><div className="w-2 h-2 bg-orange-400 rounded-full mr-3"></div> Vector & raster support</li>
+                      <li className="flex items-center justify-center sm:justify-start"><div className="w-2 h-2 bg-orange-400 rounded-full mr-3"></div> Pressure-sensitive drawing</li>
                     </ul>
                   </div>
-                  <div className="lg:w-1/2 flex justify-center mt-8 lg:mt-0">
-                    <div className="w-48 h-48 bg-gradient-to-br from-orange-100 to-orange-200 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
-                      <div className="text-6xl animate-pulse">🎨</div>
+                  <div className="w-full sm:w-1/2 flex justify-center mt-6 sm:mt-8 lg:mt-0">
+                    <div className="w-32 h-32 sm:w-48 sm:h-48 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl sm:rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                      <div className="text-4xl sm:text-6xl animate-pulse">🎨</div>
                     </div>
                   </div>
                 </div>
@@ -167,15 +167,15 @@ const HomePage = () => {
           </div>
 
           
-          <div className="relative overflow-hidden bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-400 rounded-3xl p-12 text-center">
-            <div className="absolute inset-0 bg-black/5 rounded-3xl"></div>
+          <div className="relative overflow-hidden bg-orange-500 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-12 text-center">
+            <div className="absolute inset-0 bg-black/5 rounded-2xl sm:rounded-3xl"></div>
             <div className="relative">
-              <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">And So Much More</h3>
-              <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto">
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6">And So Much More</h3>
+              <p className="text-base sm:text-lg text-white/90 mb-6 sm:mb-8 lg:mb-10 max-w-2xl mx-auto px-4">
                 Discover unlimited possibilities with our comprehensive suite of design tools, 
                 export options, and integrations.
               </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-white">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 text-white">
                 <div className="flex flex-col items-center group">
                   <div className="text-3xl mb-3 group-hover:scale-125 transition-transform duration-300">📱</div>
                   <span className="text-sm font-medium">Mobile Ready</span>
@@ -199,16 +199,16 @@ const HomePage = () => {
       </section>
 
       
-      <footer className="bg-gray-900 text-white py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="mb-4 md:mb-0">
-              <p className="text-gray-400">
+      <footer className="bg-gray-900 text-white py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
+            <div className="order-2 md:order-1">
+              <p className="text-gray-400 text-sm sm:text-base">
                 © 2025 WebCanvas Editor
               </p>
             </div>
-            <div className="flex items-center space-x-6">
-              <p className="text-gray-400">
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-6 order-1 md:order-2">
+              <p className="text-gray-400 text-sm sm:text-base text-center">
                 Made by <span className="text-orange-400 font-semibold">Sagar Suryakant Waghmare</span>
               </p>
               <a 
@@ -217,7 +217,7 @@ const HomePage = () => {
                 rel="noopener noreferrer" 
                 className="text-gray-400 hover:text-orange-400 transition-colors"
               >
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                 </svg>
               </a>
