@@ -1,3 +1,4 @@
+
 import { useParams } from 'react-router-dom';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { fabric } from 'fabric';
@@ -5,7 +6,6 @@ import { saveCanvas, loadCanvas } from '../canvasService';
 import Dock from '../components/Dock';
 
 const CanvasPage = () => {
-  // The useParams hook reads the dynamic part of the URL (the ":canvasId").
   const { canvasId } = useParams();
   const canvasRef = useRef(null);
   const fabricRef = useRef(null);
@@ -23,17 +23,11 @@ const CanvasPage = () => {
 
   const handleToolChange = useCallback((toolId) => {
     console.log('Switching to tool:', toolId);
-    
-    // Update state first
     setSelectedTool(toolId);
     selectedToolRef.current = toolId;
-    
-    // Handle canvas mode after state update
     if (fabricRef.current) {
       const canvas = fabricRef.current;
-      
       if (toolId === 'pen') {
-        // Enable drawing mode for pen
         canvas.isDrawingMode = true;
         canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
         canvas.freeDrawingBrush.width = brushSizeRef.current;
@@ -43,14 +37,11 @@ const CanvasPage = () => {
         canvas.selection = false;
         console.log('Pen mode enabled');
       } else {
-        // Disable drawing mode for other tools
         canvas.isDrawingMode = false;
         canvas.selection = true;
         console.log('Drawing mode disabled');
       }
     }
-    
-    // Update cursor immediately
     if (fabricRef.current) {
       updateCanvasCursor(toolId);
     }
@@ -58,7 +49,6 @@ const CanvasPage = () => {
 
   const updateCanvasCursor = (tool) => {
     if (!fabricRef.current) return;
-    
     const canvas = fabricRef.current;
     switch (tool) {
       case 'pen':
@@ -82,15 +72,10 @@ const CanvasPage = () => {
     }
   };
 
-  // Initialize Fabric.js canvas
   useEffect(() => {
     if (!canvasRef.current) return;
-
-    // Prevent multiple initializations
     if (fabricRef.current) return;
-
     let handleResize;
-
     try {
       const width = window.innerWidth;
       const height = window.innerHeight;
@@ -103,8 +88,6 @@ const CanvasPage = () => {
         enableRetinaScaling: false,
         renderOnAddRemove: true,
       });
-      
-      // Handle window resize
       handleResize = () => {
         const newWidth = window.innerWidth;
         const newHeight = window.innerHeight;
@@ -112,13 +95,9 @@ const CanvasPage = () => {
         canvas.setHeight(newHeight);
         canvas.renderAll();
       };
-      
       window.addEventListener('resize', handleResize);
-      
       console.log('Canvas initialized successfully');
       fabricRef.current = canvas;
-
-    // Load existing canvas data
     const loadExistingCanvas = async () => {
       try {
         const canvasData = await loadCanvas(canvasId);
@@ -131,19 +110,13 @@ const CanvasPage = () => {
         console.error('Error loading canvas:', error);
       }
     };
-
     loadExistingCanvas();
-
-    // Canvas event listeners with current state
     const handleMouseDown = (options) => {
       const pointer = canvas.getPointer(options.e);
       const currentTool = selectedToolRef.current;
       const currentColor = selectedColorRef.current;
-      
       if (currentTool === 'select') return;
-      
       let shape = null;
-      
       switch (currentTool) {
         case 'rectangle':
           shape = new fabric.Rect({
@@ -156,7 +129,6 @@ const CanvasPage = () => {
             strokeWidth: 2,
           });
           break;
-          
         case 'circle':
           shape = new fabric.Circle({
             left: pointer.x - 50,
@@ -167,7 +139,6 @@ const CanvasPage = () => {
             strokeWidth: 2,
           });
           break;
-          
         case 'text':
           shape = new fabric.IText('Double click to edit', {
             left: pointer.x,
@@ -177,12 +148,9 @@ const CanvasPage = () => {
             fontFamily: 'Arial',
           });
           break;
-          
         case 'pen':
-          // Pen mode is handled in handleToolChange, just return here
           return;
       }
-      
       if (shape) {
         canvas.add(shape);
         canvas.setActiveObject(shape);
@@ -193,27 +161,18 @@ const CanvasPage = () => {
         setHasUnsavedChanges(true);
       }
     };
-
     const handleMouseUp = () => {
-      // Don't disable drawing mode on mouse up for pen tool
-      // Drawing mode should stay active while pen tool is selected
     };
-
     canvas.on('mouse:down', handleMouseDown);
     canvas.on('mouse:up', handleMouseUp);
     canvas.on('path:created', () => setHasUnsavedChanges(true));
     canvas.on('object:modified', () => setHasUnsavedChanges(true));
     canvas.on('text:changed', () => setHasUnsavedChanges(true));
-
-      // Set initial cursor
       updateCanvasCursor(selectedToolRef.current);
-      
     } catch (error) {
       console.error('Error initializing canvas:', error);
-      // Reset canvas ref on error
       fabricRef.current = null;
     }
-
     return () => {
       if (handleResize) {
         window.removeEventListener('resize', handleResize);
@@ -225,7 +184,6 @@ const CanvasPage = () => {
     };
   }, [canvasId]);
 
-  // Update refs when state changes
   useEffect(() => {
     selectedToolRef.current = selectedTool;
     if (fabricRef.current) {
@@ -235,12 +193,9 @@ const CanvasPage = () => {
 
   useEffect(() => {
     selectedColorRef.current = selectedColor;
-    // Update pen brush color if currently in pen mode
     if (selectedTool === 'pen' && fabricRef.current && fabricRef.current.freeDrawingBrush) {
       fabricRef.current.freeDrawingBrush.color = selectedColor;
     }
-    
-    // Also update selected object color if there's an active object
     if (fabricRef.current) {
       const activeObject = fabricRef.current.getActiveObject();
       if (activeObject && selectedTool === 'select') {
@@ -256,10 +211,8 @@ const CanvasPage = () => {
     }
   }, [selectedColor, selectedTool]);
 
-  // Update brush size
   useEffect(() => {
     brushSizeRef.current = brushSize;
-    // Update pen brush size if currently in pen mode
     if (selectedTool === 'pen' && fabricRef.current && fabricRef.current.freeDrawingBrush) {
       fabricRef.current.freeDrawingBrush.width = brushSize;
       console.log('Brush size updated:', brushSize);
@@ -268,7 +221,6 @@ const CanvasPage = () => {
 
   const handleSave = useCallback(async (isAutosave = false) => {
     if (!fabricRef.current) return;
-    
     setIsSaving(true);
     try {
       const canvasData = JSON.stringify(fabricRef.current.toJSON());
@@ -287,7 +239,6 @@ const CanvasPage = () => {
 
   const deleteSelected = () => {
     if (!fabricRef.current) return;
-    
     const canvas = fabricRef.current;
     try {
       const activeObject = canvas.getActiveObject();
@@ -310,7 +261,6 @@ const CanvasPage = () => {
 
   const clearCanvas = useCallback(() => {
     if (!fabricRef.current) return;
-    
     const canvas = fabricRef.current;
     canvas.clear();
     canvas.setBackgroundColor('white', canvas.renderAll.bind(canvas));
@@ -319,12 +269,9 @@ const CanvasPage = () => {
     showToast('Canvas cleared successfully!', 'success');
   }, []);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      
-      // Handle Ctrl key combinations
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
           case 's':
@@ -334,7 +281,6 @@ const CanvasPage = () => {
             break;
           case 'd':
             e.preventDefault();
-            // Download canvas
             if (fabricRef.current) {
               const dataURL = fabricRef.current.toDataURL({
                 format: 'png',
@@ -355,8 +301,6 @@ const CanvasPage = () => {
         }
         return;
       }
-      
-      // Handle single key shortcuts
       switch (e.key.toLowerCase()) {
         case 'v':
           handleToolChange('select');
@@ -393,19 +337,16 @@ const CanvasPage = () => {
           break;
       }
     };
-
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleToolChange, handleSave, canvasId, showShortcuts, clearCanvas]);
 
-  // Autosave functionality
   useEffect(() => {
     const interval = setInterval(() => {
       if (hasUnsavedChanges && fabricRef.current) {
-        handleSave(true); // true indicates autosave
+        handleSave(true);
       }
-    }, 5000); // 5 seconds
-
+    }, 5000);
     return () => clearInterval(interval);
   }, [hasUnsavedChanges, handleSave]);
 
