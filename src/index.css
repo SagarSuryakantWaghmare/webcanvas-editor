@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Import App.css which now contains Tailwind and shadcn/ui variables */
+@import "./App.css";
 
 /* Custom range slider styles for pencil brush size */
 .slider {

@@ -2,22 +2,29 @@ import { useParams, useNavigate } from 'react-router-dom';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { fabric } from 'fabric';
 import { saveCanvas, loadCanvas } from '../canvasService';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Slider } from '../components/ui/slider';
+import { Badge } from '../components/ui/badge';
+import { Separator } from '../components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 
 const CanvasPage = () => {
   // The useParams hook reads the dynamic part of the URL (the ":canvasId").
   const { canvasId } = useParams();
   const navigate = useNavigate();
-  const canvasRef = useRef(null);
-  const fabricRef = useRef(null);
-  const [selectedTool, setSelectedTool] = useState('select');
-  const [selectedColor, setSelectedColor] = useState('#3b82f6');
-  const [brushSize, setBrushSize] = useState(2);
-  const [isSaving, setIsSaving] = useState(false);
-  const selectedToolRef = useRef('select');
-  const selectedColorRef = useRef('#3b82f6');
-  const brushSizeRef = useRef(2);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fabricRef = useRef<fabric.Canvas | null>(null);
+  const [selectedTool, setSelectedTool] = useState<string>('select');
+  const [selectedColor, setSelectedColor] = useState<string>('#3b82f6');
+  const [brushSize, setBrushSize] = useState<number>(2);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [hasSelection, setHasSelection] = useState<boolean>(false);
+  const selectedToolRef = useRef<string>('select');
+  const selectedColorRef = useRef<string>('#3b82f6');
+  const brushSizeRef = useRef<number>(2);
 
-  const handleToolChange = useCallback((toolId) => {
+  const handleToolChange = useCallback((toolId: string) => {
     // If switching away from pen mode, disable drawing mode
     if (selectedToolRef.current === 'pen' && fabricRef.current) {
       fabricRef.current.isDrawingMode = false;
@@ -43,7 +50,7 @@ const CanvasPage = () => {
     }
   }, []);
 
-  const updateCanvasCursor = (tool) => {
+  const updateCanvasCursor = (tool: string) => {
     if (!fabricRef.current) return;
     
     switch (tool) {
@@ -99,7 +106,7 @@ const CanvasPage = () => {
     loadExistingCanvas();
 
     // Canvas event listeners with current state
-    const handleMouseDown = (options) => {
+    const handleMouseDown = (options: any) => {
       const pointer = canvas.getPointer(options.e);
       const currentTool = selectedToolRef.current;
       const currentColor = selectedColorRef.current;
@@ -174,6 +181,15 @@ const CanvasPage = () => {
 
     canvas.on('mouse:down', handleMouseDown);
     canvas.on('mouse:up', handleMouseUp);
+    canvas.on('selection:created', () => {
+      setHasSelection(true);
+    });
+    canvas.on('selection:cleared', () => {
+      setHasSelection(false);
+    });
+    canvas.on('selection:updated', () => {
+      setHasSelection(true);
+    });
 
     // Set initial cursor
     updateCanvasCursor(selectedToolRef.current);
@@ -197,6 +213,14 @@ const CanvasPage = () => {
     if (selectedTool === 'pen' && fabricRef.current && fabricRef.current.freeDrawingBrush) {
       fabricRef.current.freeDrawingBrush.color = selectedColor;
     }
+    
+    // Update selected object color if there's an active object
+    if (fabricRef.current) {
+      const activeObject = fabricRef.current.getActiveObject();
+      if (activeObject) {
+        updateSelectedObjectColor(activeObject, selectedColor);
+      }
+    }
   }, [selectedColor, selectedTool]);
 
   useEffect(() => {
@@ -209,8 +233,9 @@ const CanvasPage = () => {
 
   // Keyboard shortcuts
   useEffect(() => {
-    const handleKeyPress = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!e.target || !('tagName' in e.target)) return;
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
       
       switch (e.key) {
         case 'v':
@@ -245,6 +270,26 @@ const CanvasPage = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleToolChange]);
 
+  // Function to update the color of selected objects
+  const updateSelectedObjectColor = (obj: fabric.Object, color: string) => {
+    if (!obj || !fabricRef.current) return;
+    
+    // Handle different object types
+    if (obj.type === 'i-text' || obj.type === 'text') {
+      // For text objects, change the fill color
+      obj.set('fill', color);
+    } else if (obj.type === 'path') {
+      // For pen/drawing paths, change stroke color
+      obj.set('stroke', color);
+    } else {
+      // For shapes (rect, circle, etc.), change fill color
+      obj.set('fill', color);
+    }
+    
+    // Re-render the canvas
+    fabricRef.current.renderAll();
+  };
+
   const handleSave = async () => {
     if (!fabricRef.current) return;
     
@@ -263,6 +308,8 @@ const CanvasPage = () => {
 
   const deleteSelected = () => {
     const canvas = fabricRef.current;
+    if (!canvas) return;
+    
     const activeObject = canvas.getActiveObject();
     if (activeObject) {
       canvas.remove(activeObject);
@@ -271,6 +318,8 @@ const CanvasPage = () => {
   };
 
   const clearCanvas = () => {
+    if (!fabricRef.current) return;
+    
     if (window.confirm('Are you sure you want to clear the entire canvas?')) {
       fabricRef.current.clear();
       fabricRef.current.backgroundColor = 'white';
@@ -337,28 +386,63 @@ const CanvasPage = () => {
           </div>
 
           <div>
-            <h3 className="font-medium text-gray-700 mb-3">Color</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-gray-700">Color</h3>
+              {hasSelection && (
+                <Badge variant="secondary" className="text-xs">
+                  Selected object
+                </Badge>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {[
                 '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
                 '#8b5cf6', '#ec4899', '#6b7280', '#000000'
               ].map(color => (
-                <button
-                  key={color}
-                  onClick={() => setSelectedColor(color)}
-                  className={`w-8 h-8 rounded-lg border-2 ${
-                    selectedColor === color ? 'border-gray-800' : 'border-gray-300'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
+                <TooltipProvider key={color}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setSelectedColor(color)}
+                        className={`w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${
+                          selectedColor === color ? 'border-gray-800 ring-2 ring-gray-300' : 'border-gray-300'
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Use color {color}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ))}
             </div>
-            <input
-              type="color"
-              value={selectedColor}
-              onChange={(e) => setSelectedColor(e.target.value)}
-              className="mt-2 w-full h-8 rounded border"
-            />
+            <div className="mt-3">
+              <label className="text-sm text-gray-600 mb-1 block">Custom Color:</label>
+              <input
+                type="color"
+                value={selectedColor}
+                onChange={(e) => setSelectedColor(e.target.value)}
+                className="w-full h-10 rounded-lg border border-gray-300 cursor-pointer"
+              />
+            </div>
+            {hasSelection && (
+              <div className="mt-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-blue-800">Selected Object</p>
+                  <div 
+                    className="w-4 h-4 rounded border border-blue-300" 
+                    style={{ 
+                      backgroundColor: String(fabricRef.current?.getActiveObject()?.get('fill') || 
+                                      fabricRef.current?.getActiveObject()?.get('stroke') || '#000')
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-blue-700">
+                  💡 Change color above to update this object instantly!
+                </p>
+              </div>
+            )}
           </div>
 
           <div className={selectedTool === 'pen' ? 'block' : 'hidden'}>
