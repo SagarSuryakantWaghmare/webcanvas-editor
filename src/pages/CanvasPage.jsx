@@ -16,6 +16,7 @@ const CanvasPage = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
   const selectedToolRef = useRef('select');
   const selectedColorRef = useRef('#3b82f6');
   const brushSizeRef = useRef(3);
@@ -284,6 +285,40 @@ const CanvasPage = () => {
     }
   }, [canvasId]);
 
+  const deleteSelected = () => {
+    if (!fabricRef.current) return;
+    
+    const canvas = fabricRef.current;
+    try {
+      const activeObject = canvas.getActiveObject();
+      if (activeObject) {
+        canvas.remove(activeObject);
+        canvas.renderAll();
+        setHasUnsavedChanges(true);
+      }
+    } catch (error) {
+      console.error('Error deleting object:', error);
+    }
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 3000);
+  };
+
+  const clearCanvas = useCallback(() => {
+    if (!fabricRef.current) return;
+    
+    const canvas = fabricRef.current;
+    canvas.clear();
+    canvas.setBackgroundColor('white', canvas.renderAll.bind(canvas));
+    setHasUnsavedChanges(true);
+    setShowClearModal(false);
+    showToast('Canvas cleared successfully!', 'success');
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -312,6 +347,10 @@ const CanvasPage = () => {
               link.click();
               showToast('Canvas downloaded with Ctrl+D!', 'success');
             }
+            break;
+          case 'k':
+            e.preventDefault();
+            setShowClearModal(true);
             break;
         }
         return;
@@ -357,30 +396,7 @@ const CanvasPage = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [handleToolChange, handleSave, canvasId, showShortcuts]);
-
-  const deleteSelected = () => {
-    if (!fabricRef.current) return;
-    
-    const canvas = fabricRef.current;
-    try {
-      const activeObject = canvas.getActiveObject();
-      if (activeObject) {
-        canvas.remove(activeObject);
-        canvas.renderAll();
-        setHasUnsavedChanges(true);
-      }
-    } catch (error) {
-      console.error('Error deleting object:', error);
-    }
-  };
-
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast({ show: false, message: '', type: 'success' });
-    }, 3000);
-  };
+  }, [handleToolChange, handleSave, canvasId, showShortcuts, clearCanvas]);
 
   // Autosave functionality
   useEffect(() => {
@@ -392,8 +408,6 @@ const CanvasPage = () => {
 
     return () => clearInterval(interval);
   }, [hasUnsavedChanges, handleSave]);
-
-
 
   const dockItems = [
     {
@@ -498,6 +512,40 @@ const CanvasPage = () => {
         link.href = dataURL;
         link.click();
         showToast('Canvas downloaded successfully!', 'success');
+      },
+      className: ''
+    },
+    {
+      label: 'Delete',
+      tooltip: 'Delete Selected Item (Del)',
+      shortcut: 'Del',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      onClick: () => {
+        deleteSelected();
+        showToast('Selected item deleted!', 'success');
+      },
+      className: ''
+    },
+    {
+      label: 'Clear',
+      tooltip: 'Clear Canvas (Ctrl+K)',
+      shortcut: 'Ctrl+K',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+          <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ),
+      onClick: () => {
+        setShowClearModal(true);
       },
       className: ''
     }
@@ -680,6 +728,10 @@ const CanvasPage = () => {
                   <span>Delete Selected</span>
                   <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">Del</kbd>
                 </div>
+                <div className="flex justify-between">
+                  <span>Clear Canvas</span>
+                  <kbd className="bg-gray-100 px-2 py-1 rounded text-xs">Ctrl+K</kbd>
+                </div>
               </div>
               <div className="border-t pt-3 mt-4">
                 <div className="flex justify-between text-sm">
@@ -697,7 +749,7 @@ const CanvasPage = () => {
       )}
 
       {/* Help Button - Bottom Left */}
-      <div className="fixed bottom-6 left-6 z-10">
+      <div className="fixed lg:bottom-6 bottom-30 left-6 z-10">
         <button
           onClick={() => setShowShortcuts(!showShortcuts)}
           className="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
@@ -710,6 +762,43 @@ const CanvasPage = () => {
           </svg>
         </button>
       </div>
+
+      {/* Clear Canvas Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-red-100 rounded-full p-3">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-600">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Clear Canvas</h3>
+              <p className="text-gray-600">
+                Are you sure you want to clear the entire canvas? This action cannot be undone and all your work will be lost.
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={clearCanvas}
+                className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200"
+              >
+                Clear Canvas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
