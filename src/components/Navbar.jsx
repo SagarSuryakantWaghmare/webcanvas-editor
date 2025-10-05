@@ -3,11 +3,11 @@ import React from 'react';
 const Navbar = () => {
   return (
     <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-7xl mx-auto px-6">
-      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg px-6 py-4">
+      <div className="bg-white/90 backdrop-blur-md border border-gray-300 rounded-xl shadow-xl px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Left side - Logo */}
           <div className="flex items-center space-x-2">
-            <div className="bg-blue-600 rounded-lg p-2">
+            <div className="bg-orange-500 rounded-lg p-2">
               <svg 
                 width="24" 
                 height="24" 
@@ -31,7 +31,7 @@ const Navbar = () => {
             href="https://github.com/SagarSuryakantWaghmare/webcanvas-editor"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center space-x-2 bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-md"
+            className="flex items-center space-x-2 bg-gray-900 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 hover:scale-105 shadow-lg"
           >
             <svg 
               width="20" 

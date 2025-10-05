@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Hyperspeed from './Hyperspeed';
-import GradientText from './GradientText';
 import { createCanvas } from '../canvasService';
 
 const HeroSection = () => {
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
 
+  // Check for existing canvas in localStorage on component mount
+  useEffect(() => {
+    const existingCanvasId = localStorage.getItem('currentCanvasId');
+    if (existingCanvasId) {
+      navigate(`/canvas/${existingCanvasId}`);
+    }
+  }, [navigate]);
+
   const handleCreateCanvas = async () => {
     setIsCreating(true);
     try {
       const canvasId = await createCanvas();
+      // Save canvas ID to localStorage
+      localStorage.setItem('currentCanvasId', canvasId);
       navigate(`/canvas/${canvasId}`);
     } catch (error) {
       console.error("Error creating new canvas: ", error);
@@ -21,69 +29,30 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Hyperspeed Animation */}
+    <section className="relative min-h-screen flex items-center justify-center bg-white">
+      {/* Simple Pattern Background */}
       <div className="absolute inset-0 w-full h-full">
-        <Hyperspeed
-          effectOptions={{
-            onSpeedUp: () => {},
-            onSlowDown: () => {},
-            distortion: 'turbulentDistortion',
-            length: 400,
-            roadWidth: 10,
-            islandWidth: 2,
-            lanesPerRoad: 4,
-            fov: 90,
-            fovSpeedUp: 150,
-            speedUp: 2,
-            carLightsFade: 0.4,
-            totalSideLightSticks: 20,
-            lightPairsPerRoadWay: 40,
-            shoulderLinesWidthPercentage: 0.05,
-            brokenLinesWidthPercentage: 0.1,
-            brokenLinesLengthPercentage: 0.5,
-            lightStickWidth: [0.12, 0.5],
-            lightStickHeight: [1.3, 1.7],
-            movingAwaySpeed: [60, 80],
-            movingCloserSpeed: [-120, -160],
-            carLightsLength: [400 * 0.03, 400 * 0.2],
-            carLightsRadius: [0.05, 0.14],
-            carWidthPercentage: [0.3, 0.5],
-            carShiftX: [-0.8, 0.8],
-            carFloorSeparation: [0, 5],
-            colors: {
-              roadColor: 0xffffff,
-              islandColor: 0xf8f9fa,
-              background: 0xffffff,
-              shoulderLines: 0xe5e7eb,
-              brokenLines: 0xe5e7eb,
-              leftCars: [0x3b82f6, 0x1d4ed8, 0x1e40af],
-              rightCars: [0x06b6d4, 0x0891b2, 0x0e7490],
-              sticks: 0x6b7280
-            }
-          }}
-        />
+        <div className="absolute inset-0 bg-gray-50">
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs>
+              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#E5E7EB" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3" />
+          </svg>
+        </div>
       </div>
       {/* Content */}
       <div className="relative z-10 max-w-7xl my-12 mx-auto px-6 text-center">
-        {/* Main Heading with Gradient Text Animation */}
+        {/* Main Heading */}
         <div className="mb-8">
-          <GradientText
-            colors={['#374151', '#111827', '#6b7280']}
-            animationSpeed={6}
-            showBorder={false}
-            className="text-5xl md:text-7xl font-bold mb-4"
-          >
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-4 leading-tight">
             CREATE AMAZING
-          </GradientText>
-          <GradientText
-            colors={['#3b82f6', '#1d4ed8', '#06b6d4']}
-            animationSpeed={8}
-            showBorder={false}
-            className="text-5xl md:text-7xl font-bold"
-          >
+          </h1>
+          <h2 className="text-5xl md:text-7xl font-bold text-orange-500 leading-tight">
             CANVAS DESIGNS
-          </GradientText>
+          </h2>
         </div>
         {/* Subtitle */}
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
@@ -96,7 +65,7 @@ const HeroSection = () => {
           <button
             onClick={handleCreateCanvas}
             disabled={isCreating}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-200 hover:scale-105 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center space-x-3"
+            className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:scale-105 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center space-x-3 shadow-lg"
           >
             {isCreating ? (
               <>
@@ -112,14 +81,16 @@ const HeroSection = () => {
               </>
             )}
           </button>
-          <button className="bg-white hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-2xl font-semibold text-lg border-2 border-gray-200 transition-all duration-200 hover:scale-105 flex items-center space-x-3">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-600">
+          <button className="bg-white hover:bg-gray-50 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg border-2 border-gray-300 transition-all duration-200 hover:scale-105 flex items-center space-x-3 shadow-md">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-blue-500">
               <path d="M8 5v14l11-7z" fill="currentColor"/>
             </svg>
             <span>See Features</span>
           </button>
         </div>
       </div>
+      
+      
     </section>
   );
 };
