@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { fabric } from 'fabric';
 import { saveCanvas, loadCanvas } from '../canvasService';
 import Dock from '../components/Dock';
-
+// import { IoTriangleOutline } from "react-icons/io5";
 const CanvasPage = () => {
   const { canvasId } = useParams();
   const canvasRef = useRef(null);
@@ -60,10 +60,17 @@ const CanvasPage = () => {
         canvas.defaultCursor = 'text';
         canvas.hoverCursor = 'text';
         break;
-      case 'rectangle':
-      case 'circle':
+      case 'triangle':
         canvas.defaultCursor = 'crosshair';
         canvas.hoverCursor = 'crosshair';
+        canvas.moveCursor = 'crosshair';
+        break;
+      case 'rectangle':
+        canvas.defaultCursor = 'crosshair';
+        break;
+      case 'circle':
+          canvas.defaultCursor = 'crosshair';
+          canvas.hoverCursor = 'crosshair';
         break;
       default:
         canvas.defaultCursor = 'default';
@@ -98,76 +105,87 @@ const CanvasPage = () => {
       window.addEventListener('resize', handleResize);
       console.log('Canvas initialized successfully');
       fabricRef.current = canvas;
-    const loadExistingCanvas = async () => {
-      try {
-        const canvasData = await loadCanvas(canvasId);
-        if (canvasData && canvasData.canvasData && canvas) {
-          canvas.loadFromJSON(canvasData.canvasData, () => {
-            canvas.renderAll();
-          });
+      const loadExistingCanvas = async () => {
+        try {
+          const canvasData = await loadCanvas(canvasId);
+          if (canvasData && canvasData.canvasData && canvas) {
+            canvas.loadFromJSON(canvasData.canvasData, () => {
+              canvas.renderAll();
+            });
+          }
+        } catch (error) {
+          console.error('Error loading canvas:', error);
         }
-      } catch (error) {
-        console.error('Error loading canvas:', error);
-      }
-    };
-    loadExistingCanvas();
-    const handleMouseDown = (options) => {
-      const pointer = canvas.getPointer(options.e);
-      const currentTool = selectedToolRef.current;
-      const currentColor = selectedColorRef.current;
-      if (currentTool === 'select') return;
-      let shape = null;
-      switch (currentTool) {
-        case 'rectangle':
-          shape = new fabric.Rect({
-            left: pointer.x - 50,
-            top: pointer.y - 40,
-            width: 100,
-            height: 80,
-            fill: currentColor,
-            stroke: '#333',
-            strokeWidth: 2,
-          });
-          break;
-        case 'circle':
-          shape = new fabric.Circle({
-            left: pointer.x - 50,
-            top: pointer.y - 50,
-            radius: 50,
-            fill: currentColor,
-            stroke: '#333',
-            strokeWidth: 2,
-          });
-          break;
-        case 'text':
-          shape = new fabric.IText('Double click to edit', {
-            left: pointer.x,
-            top: pointer.y,
-            fill: currentColor,
-            fontSize: 24,
-            fontFamily: 'Arial',
-          });
-          break;
-        case 'pen':
-          return;
-      }
-      if (shape) {
-        canvas.add(shape);
-        canvas.setActiveObject(shape);
-        selectedToolRef.current = 'select';
-        setSelectedTool('select');
-        updateCanvasCursor('select');
-        canvas.renderAll();
-        setHasUnsavedChanges(true);
-      }
-    };
-    const handleMouseUp = () => {
-    };
-    canvas.on('mouse:down', handleMouseDown);
-    canvas.on('mouse:up', handleMouseUp);
-    canvas.on('path:created', () => setHasUnsavedChanges(true));
-    canvas.on('object:modified', () => setHasUnsavedChanges(true));
-    canvas.on('text:changed', () => setHasUnsavedChanges(true));
+      };
+      loadExistingCanvas();
+      const handleMouseDown = (options) => {
+        const pointer = canvas.getPointer(options.e);
+        const currentTool = selectedToolRef.current;
+        const currentColor = selectedColorRef.current;
+        if (currentTool === 'select') return;
+        let shape = null;
+        switch (currentTool) {
+          case 'rectangle':
+            shape = new fabric.Rect({
+              left: pointer.x - 50,
+              top: pointer.y - 40,
+              width: 100,
+              height: 80,
+              fill: currentColor,
+              stroke: '#333',
+              strokeWidth: 2,
+            });
+            break;
+          case 'circle':
+            shape = new fabric.Circle({
+              left: pointer.x - 50,
+              top: pointer.y - 50,
+              radius: 50,
+              fill: currentColor,
+              stroke: '#333',
+              strokeWidth: 2,
+            });
+            break;
+          case 'triangle':
+            shape = new fabric.Triangle({
+              left: pointer.x - 50,
+              top: pointer.y - 50,
+              width: 100,
+              height: 100,
+              fill: currentColor,
+              stroke: '#333',
+              strokeWidth: 2,
+            });
+            break;
+          case 'text':
+            shape = new fabric.IText('Double click to edit', {
+              left: pointer.x,
+              top: pointer.y,
+              fill: currentColor,
+              fontSize: 24,
+              fontFamily: 'Arial',
+            });
+            break;
+          case 'pen':
+            return;
+        }
+        if (shape) {
+          canvas.add(shape);
+          canvas.setActiveObject(shape);
+          selectedToolRef.current = 'select';
+          setSelectedTool('select');
+          updateCanvasCursor('select');
+          canvas.renderAll();
+          setHasUnsavedChanges(true);
+        }
+      };
+      const handleMouseUp = () => {
+      };
+      canvas.on('mouse:down', handleMouseDown);
+      canvas.on('mouse:up', handleMouseUp);
+      canvas.on('path:created', () => setHasUnsavedChanges(true));
+      canvas.on('object:modified', () => setHasUnsavedChanges(true));
+      canvas.on('text:changed', () => setHasUnsavedChanges(true));
       updateCanvasCursor(selectedToolRef.current);
     } catch (error) {
       console.error('Error initializing canvas:', error);
@@ -357,8 +375,8 @@ const CanvasPage = () => {
       shortcut: 'V',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <path d="M12 2L3 7L12 12L21 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M3 17L12 22L21 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M12 2L3 7L12 12L21 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M3 17L12 22L21 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
       onClick: () => handleToolChange('select'),
@@ -370,7 +388,7 @@ const CanvasPage = () => {
       shortcut: 'R',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" />
         </svg>
       ),
       onClick: () => handleToolChange('rectangle'),
@@ -382,11 +400,23 @@ const CanvasPage = () => {
       shortcut: 'C',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
         </svg>
       ),
       onClick: () => handleToolChange('circle'),
       className: selectedTool === 'circle' ? 'bg-orange-500 border-orange-300' : ''
+    },
+    {
+      label: 'triangle',
+      tooltip: 'triangle Tool (T)',
+      shortcut: 'T',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+          <polygon points="12,2 22,20 2,20" stroke="currentColor" strokeWidth="2" fill="none" />
+        </svg>
+      ),
+      onClick: () => handleToolChange('triangle'),
+      className: selectedTool === 'triangle' ? 'bg-orange-500 border-orange-300' : ''
     },
     {
       label: 'Pencil',
@@ -394,9 +424,9 @@ const CanvasPage = () => {
       shortcut: 'P',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <path d="M12 19L7 14L16.5 4.5C17.28 3.72 18.72 3.72 19.5 4.5C20.28 5.28 20.28 6.72 19.5 7.5L12 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M16 8L2 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M17.5 15H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M12 19L7 14L16.5 4.5C17.28 3.72 18.72 3.72 19.5 4.5C20.28 5.28 20.28 6.72 19.5 7.5L12 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M16 8L2 22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M17.5 15H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
       onClick: () => handleToolChange('pen'),
@@ -408,9 +438,9 @@ const CanvasPage = () => {
       shortcut: 'T',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <polyline points="4,7 4,4 20,4 20,7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <line x1="9" y1="20" x2="15" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <polyline points="4,7 4,4 20,4 20,7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="9" y1="20" x2="15" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
       onClick: () => handleToolChange('text'),
@@ -422,9 +452,9 @@ const CanvasPage = () => {
       shortcut: 'Ctrl+S',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <path d="M19 21H5C3.89 21 3 20.11 3 19V5C3 3.89 3.89 3 5 3H16L21 8V19C21 20.11 20.11 21 19 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="17,21 17,13 7,13 7,21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="7,3 7,8 15,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M19 21H5C3.89 21 3 20.11 3 19V5C3 3.89 3.89 3 5 3H16L21 8V19C21 20.11 20.11 21 19 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="17,21 17,13 7,13 7,21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="7,3 7,8 15,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
       onClick: handleSave,
@@ -436,9 +466,9 @@ const CanvasPage = () => {
       shortcut: 'Ctrl+D',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
       onClick: () => {
@@ -462,10 +492,10 @@ const CanvasPage = () => {
       shortcut: 'Del',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <polyline points="3,6 5,6 21,6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
       onClick: () => {
@@ -480,9 +510,9 @@ const CanvasPage = () => {
       shortcut: 'Ctrl+K',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-          <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+          <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ),
       onClick: () => {
@@ -500,7 +530,7 @@ const CanvasPage = () => {
         <div className="flex items-center space-x-2">
           <div className="bg-orange-500 rounded-lg p-2">
             <svg width="24" height="24" className="text-white" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z" fill="currentColor"/>
+              <path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z" fill="currentColor" />
             </svg>
           </div>
           <span className="font-bold text-xl text-gray-900">
@@ -514,9 +544,8 @@ const CanvasPage = () => {
               <button
                 key={color}
                 onClick={() => setSelectedColor(color)}
-                className={`w-6 h-6 rounded-full border-2 transition-all ${
-                  selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:scale-105'
-                }`}
+                className={`w-6 h-6 rounded-full border-2 transition-all ${selectedColor === color ? 'border-gray-800 scale-110' : 'border-gray-300 hover:scale-105'
+                  }`}
                 style={{ backgroundColor: color }}
               />
             ))}
@@ -561,7 +590,7 @@ const CanvasPage = () => {
           className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl font-medium shadow flex items-center space-x-2 transition-all duration-200 hover:scale-105"
         >
           <svg width="20" height="20" className="text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.30.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
           </svg>
           <span className="hidden xs:inline">Star on GitHub</span>
           <span className="xs:hidden">Star</span>
@@ -571,11 +600,10 @@ const CanvasPage = () => {
       <div className="fixed inset-0 z-0">
         <canvas
           ref={canvasRef}
-          className={`w-full h-full transition-all duration-300 ${
-            selectedTool === 'pen'
+          className={`w-full h-full transition-all duration-300 ${selectedTool === 'pen'
               ? 'cursor-crosshair'
               : 'cursor-default'
-          }`}
+            }`}
           style={{ display: 'block', width: '100vw', height: '100vh' }}
         />
       </div>
@@ -591,22 +619,20 @@ const CanvasPage = () => {
 
       {/* Toast Notifications */}
       {toast.show && (
-        <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg transition-all duration-300 ${
-          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
+        <div className={`fixed top-6 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg transition-all duration-300 ${toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+          }`}>
           {toast.message}
         </div>
       )}
 
       {/* Save Status - Bottom Right */}
       <div className="fixed lg:bottom-6 bottom-30 right-6 z-10">
-        <div className={`px-4 py-2 rounded-xl shadow-lg transition-all duration-300 ${
-          isSaving 
-            ? 'bg-blue-500 text-white' 
-            : hasUnsavedChanges 
-            ? 'bg-orange-500 text-white' 
-            : 'bg-green-500 text-white'
-        }`}>
+        <div className={`px-4 py-2 rounded-xl shadow-lg transition-all duration-300 ${isSaving
+            ? 'bg-blue-500 text-white'
+            : hasUnsavedChanges
+              ? 'bg-orange-500 text-white'
+              : 'bg-green-500 text-white'
+          }`}>
           {isSaving ? (
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -631,7 +657,7 @@ const CanvasPage = () => {
                 className="text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>
@@ -697,9 +723,9 @@ const CanvasPage = () => {
           title="Keyboard Shortcuts (?)"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-            <path d="M9.09 9A3 3 0 0 1 12 6C13.6569 6 15 7.34315 15 9C15 10.6569 13.6569 12 12 12V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+            <path d="M9.09 9A3 3 0 0 1 12 6C13.6569 6 15 7.34315 15 9C15 10.6569 13.6569 12 12 12V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M12 17H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </div>
@@ -711,9 +737,9 @@ const CanvasPage = () => {
             <div className="flex items-center justify-center mb-4">
               <div className="bg-red-100 rounded-full p-3">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-red-600">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                  <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
